@@ -15,6 +15,7 @@ xhtml is a stricter, more XML-based version of HTML
 from bs4 import BeautifulSoup
 import json
 import matplotlib.pyplot as plt
+import pandas as pd
 #import numpy as np
 
 data_dir    = './'
@@ -77,17 +78,27 @@ def get_waypoints( fname_in, silent=True, single_plot=False ):
         elif (waypts_str[ii] == ',') and (waypts_str[ii-1] != ']'):
             lon.append( float( waypts_str[(ii+1):].partition(']')[0] ) )
 
+    if not silent:
+        print( "number of waypoints extracted from file '{0}': N_lon = {1}, N_lat = {2}".format(
+            fname_in, len(lon), len(lat) ))
+
+    # convert everything to a pandas dataframe
+    df  = pd.DataFrame( lat, columns=['latitude'] )
+    df['longitude'] = lon
+
     if single_plot:
         fig1    = plt.figure( figsize=(8,6) )
         ax1     = fig1.add_subplot( 1,1,1 )
-        ax1.plot( lon, lat, marker='.', linestyle='none' )
+        ax1.plot( df['longitude'], df['latitude'], marker='.' )
         plt.show()
 
+    return df
 
 #}}}
 
+
 print( get_title(fname_in, silent=False) )
-print( get_waypoints(fname_in, single_plot=True) )
+print( get_waypoints(fname_in, single_plot=True, silent=False) )
 print('xxxxxxxx' )
 
 with open (fname_in, 'r') as f:
