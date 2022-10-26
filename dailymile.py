@@ -17,7 +17,7 @@ import json
 import matplotlib.pyplot as plt
 import pandas as pd
 import os
-#import numpy as np
+import numpy as np
 
 
 def get_title( fname_in, silent=True ):
@@ -43,6 +43,9 @@ def get_title( fname_in, silent=True ):
 
 def get_waypoints( fname_in, silent=True, single_plot=False ):
 #{{{
+
+    errValue    = -1
+    
     with open (fname_in, 'r') as fh:
         soup    = BeautifulSoup(fh, 'lxml')
 
@@ -60,6 +63,12 @@ def get_waypoints( fname_in, silent=True, single_plot=False ):
     # split() method splits string from specified separator and returns list 
     # object with string elements separated by separator
     str_tmp1    = relevant_script.split('var waypoints = ')
+    # some files do not contain waypoints for some reason, thus above split
+    # command will find nothing to split, hence results is same as original
+    # string, but in a 1-element list
+    if str_tmp1[0] == relevant_script:
+        print( 'WARNING: no waypoints found in file {0}'.format(fname_in) )
+        return errValue
     str_tmp2    = str_tmp1[1].split(';')
     str_tmp3    = str_tmp2[0]
     # delete beginning '[' and ending ']'
@@ -95,22 +104,45 @@ def get_waypoints( fname_in, silent=True, single_plot=False ):
 #}}}
 
 
-def plot_all_track( data_dir='./', silent=True ):
+def plot_all_track( data_dir='./', 
+                    lat_min=np.nan, lat_max=np.nan, 
+                    lon_min=np.nan, lon_max=np.nan,
+                    silent=True ):
+#{{{
 
+    # empty dataframe to be filled waypoints from all tracks
     df  = pd.DataFrame( columns=['latitude', 'longitude'] )
-
-    print( os.listdir(data_dir) )
 
     # loop through all files in set directoy
     for filename in os.listdir(data_dir):
         fname   = os.path.join( data_dir, filename )
         print( filename, fname, os.path.isfile(fname) )
-        if os.path.isfile(fname):
+        # take case that we only the dailymile files (which have no ending)
+        if os.path.isfile(fname) and ('.' not in filename):
             print( get_title(fname) )
-            df  = pd.concat( [df, get_waypoints(fname)], axis=0, ignore_index=False )
+            df_tmp  = get_waypoints(fname)
+            if isinstance(df_tmp, pd.DataFrame):
+                df  = pd.concat( [df, df_tmp], axis=0, ignore_index=False )
 
-            print(df)
+    if np.isnan(lat_min):
+        lat_min = df['latitude'].min()
+    if np.isnan(lat_max):
+        lat_max = df['latitude'].max()
+    if np.isnan(lon_min):
+        lon_min = df['longitude'].min()
+    if np.isnan(lon_max):
+        lon_max = df['longitude'].max()
 
+    fig1    = plt.figure( figsize=(8,8) )
+    ax1     = fig1.add_subplot( 1,1,1 )
+
+    ax1.scatter( df['longitude'], df['latitude'], s=0.1 )
+
+    ax1.set_xlim( [lon_min, lon_max] )
+    ax1.set_ylim( [lat_min, lat_max] )
+
+    plt.show()
+#}}}
 
 
 def main():
@@ -119,7 +151,6 @@ def main():
     #print( get_title(fname_in, silent=False) )
     #print( get_waypoints(fname_in, single_plot=True, silent=False) )
 
-    plot_all_track( data_dir='../../../backup_homes/ipfpc105/Dropbox/running/dailymile/' )
 
 if __name__ == '__main__':
     main()
