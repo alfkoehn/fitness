@@ -16,6 +16,7 @@ from bs4 import BeautifulSoup
 import json
 import matplotlib.pyplot as plt
 import pandas as pd
+import os
 #import numpy as np
 
 
@@ -94,12 +95,31 @@ def get_waypoints( fname_in, silent=True, single_plot=False ):
 #}}}
 
 
+def plot_all_track( data_dir='./', silent=True ):
+
+    df  = pd.DataFrame( columns=['latitude', 'longitude'] )
+
+    print( os.listdir(data_dir) )
+
+    # loop through all files in set directoy
+    for filename in os.listdir(data_dir):
+        fname   = os.path.join( data_dir, filename )
+        print( filename, fname, os.path.isfile(fname) )
+        if os.path.isfile(fname):
+            print( get_title(fname) )
+            df  = pd.concat( [df, get_waypoints(fname)], axis=0, ignore_index=False )
+
+            print(df)
+
+
+
 def main():
     data_dir    = './'
     fname_in    = '11572144'
-    print( get_title(fname_in, silent=False) )
-    print( get_waypoints(fname_in, single_plot=True, silent=False) )
+    #print( get_title(fname_in, silent=False) )
+    #print( get_waypoints(fname_in, single_plot=True, silent=False) )
 
+    plot_all_track( data_dir='../../../backup_homes/ipfpc105/Dropbox/running/dailymile/' )
 
 if __name__ == '__main__':
     main()
