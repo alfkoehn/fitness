@@ -11,12 +11,6 @@ xhtml is a stricter, more XML-based version of HTML
 
 """
 
-#from html.parser import HTMLParser
-#class parser(HTMLParser):
-#    pass
-#p = parser()
-#p.feed('10371720')
-
 
 from bs4 import BeautifulSoup
 import json
@@ -28,7 +22,7 @@ fname_in    = '11572144'
 
 
 def get_title( fname_in, silent=True ):
-
+#{{{
     with open(fname_in, 'r') as f:
         # open html file and read its conten
         contents    = f.read()
@@ -45,25 +39,55 @@ def get_title( fname_in, silent=True ):
         #print(description['content'] if description else 'no description given' )
 
     return description['content']
+#}}}
 
 
-def get_all_metatags( fname_in ):
-    
-    with open(fname_in, 'r') as f:
-        # open html file and read its conten
-        contents    = f.read()
-    
-        # create BeautifulSoup object, pass HTML data to the constructor, specify parser
-        soup    = BeautifulSoup(contents, 'lxml')
+def get_waypoints( fname_in, silent=True, single_plot=False ):
+#{{{
+    with open (fname_in, 'r') as fh:
+        soup    = BeautifulSoup(fh, 'lxml')
 
-    metatags    = soup.find_all('meta', attrs={'name':'generator'})
+    # get all JavaScript elements
+    script_all  = soup.find_all('script')
+    # works also: script_all  = soup.find_all('script', type='text/javascript')
 
-    for tag in metatags:
-        print( tag )
+    if not silent:
+        print( 'len(script_all): ', len(script_all) )
 
+    # the relevant data is stored at ID 6 which should correspond to the 7th
+    # javascript element in the array of all javascript elements
+    relevant_script = str(script_all[6])
+
+    # split() method splits string from specified separator and returns list 
+    # object with string elements separated by separator
+    str_tmp1    = relevant_script.split('var waypoints = ')
+    str_tmp2    = str_tmp1[1].split(';')
+    str_tmp3    = str_tmp2[0]
+    # delete beginning '[' and ending ']'
+    waypts_str  = str_tmp3[1:-1]
+
+    # loop through string of waypoints and convert it into array
+    lat = []
+    lon = []
+    for ii in range(len(waypts_str)):
+        if waypts_str[ii] == '[':
+            # read until next occurence of ',' and convert into float
+            lat_val = float( waypts_str[(ii+1):].partition(',')[0] )
+            lat.append( lat_val ) 
+        elif (waypts_str[ii] == ',') and (waypts_str[ii-1] != ']'):
+            lon.append( float( waypts_str[(ii+1):].partition(']')[0] ) )
+
+    if single_plot:
+        fig1    = plt.figure( figsize=(8,6) )
+        ax1     = fig1.add_subplot( 1,1,1 )
+        ax1.plot( lon, lat, marker='.', linestyle='none' )
+        plt.show()
+
+
+#}}}
 
 print( get_title(fname_in, silent=False) )
-print( get_all_metatags(fname_in) )
+print( get_waypoints(fname_in, single_plot=True) )
 print('xxxxxxxx' )
 
 with open (fname_in, 'r') as f:
